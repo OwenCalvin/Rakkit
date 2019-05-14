@@ -27,6 +27,7 @@
   },
   "scripts": {
     "start": "ts-node -T examples/basic/src/App.ts",
+    "start:cms": "ts-node -T src/Packages/CMS/Main.ts",
     "test": "jest --config jest.config.json --detectOpenHandles --runInBand --forceExit"
   },
   "keywords": [
@@ -45,6 +46,7 @@
     "middlewares"
   ],
   "dependencies": {
+    "@koa/cors": "^3.0.0",
     "@types/koa": "^2.0.48",
     "@types/koa-router": "^7.0.40",
     "@types/socket.io": "^2.1.2",
@@ -54,7 +56,9 @@
     "koa": "^2.7.0",
     "koa-compose": "^4.1.0",
     "koa-router": "^7.4.0",
-    "socket.io": "^2.2.0"
+    "mysql": "^2.17.1",
+    "socket.io": "^2.2.0",
+    "typeorm": "^0.2.17"
   },
   "devDependencies": {
     "@types/axios": "^0.14.0",

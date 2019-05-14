@@ -54,6 +54,17 @@
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "port": 9228
-    }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug CMS",
+      "protocol": "inspector",
+      "args": ["${workspaceRoot}/src/Packages/CMS/Main.ts"],
+      "cwd": "${workspaceRoot}",
+      "runtimeArgs": ["-r", "ts-node/register/transpile-only"],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "openOnSessionStart"
+    },
   ]
 }
