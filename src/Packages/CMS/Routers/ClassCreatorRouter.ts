@@ -5,13 +5,15 @@ import {
   Decorator,
   Import,
   FieldNode,
-  Accessor
+  Accessor,
+  TsCodeWriter
 } from "../../TSD";
 import {
   Router,
   Post,
   IContext,
-  Get
+  Get,
+  Delete
 } from "../..";
 
 @Router("/cms")
@@ -25,28 +27,40 @@ export class ClassCreatorRouter {
 
   @Post("/")
   private createClass(context: IContext<IClassNode>) {
-    const classNodeObjects: IClassNode[] = context.request.body;
+    const classNodeObject: IClassNode = context.request.body;
+    const editName = classNodeObject.ReceivedName;
 
-    if (classNodeObjects) {
-      const classNodes = classNodeObjects.map((classNodeObject) => {
-        const classNode = new ClassNode();
-        classNode.ParseObject(classNodeObject);
-        classNode.SetImports([]);
-        classNode.SetPath(`${__dirname}/../Models/${classNode.Name}.ts`);
-        this.templateClass(classNode);
+    if (classNodeObject) {
+      const classNode = new ClassNode();
 
-        this._tsd.Write(classNode, false);
+      if (editName !== classNode.Name) {
+        this._tsd.Remove(editName);
+      }
 
-        return classNode;
-      });
-
+      classNode
+        .ParseObject(classNodeObject)
+        .SetImports([])
+        .SetPath(`${__dirname}/../Models/${classNode.Name}.ts`);
+      this.templateClass(classNode);
+      this._tsd.Write(classNode, false);
       this._tsd.WriteSchemaFile();
 
-      context.body = Object.assign({}, classNodes[0].ToObject(), { Path: undefined });
+      context.body = this.sendableClass(classNode);
     } else {
-      context.body = "fill:classnode";
+      context.body = this.msg("fill");
       context.status = 403;
     }
+  }
+
+  @Delete("/:name")
+  private async delete(context: IContext<IClassNode>) {
+    const name = context.request.query.name;
+    if (name) {
+      const removed = await this._tsd.Remove(name);
+      context.body = this.sendableClass(removed);
+    }
+    context.status = 403;
+    context.body = this.msg("fill");
   }
 
   @Post("/restart")
@@ -64,17 +78,27 @@ export class ClassCreatorRouter {
     context.body = "ok";
   }
 
+  private msg(msg: string) {
+    return {
+      msg
+    };
+  }
+
+  private sendableClass(classNode: ClassNode) {
+    return Object.assign({}, classNode.ToObject(), { Path: undefined });
+  }
+
   private templateClass(classNode: ClassNode) {
     const typeOrmImport = new Import("typeorm");
-    const decorators = new Map([
-      ["Entity", new Decorator("Entity")],
-      ["Column", new Decorator("Column")],
-      ["PrimaryGeneratedColumn", new Decorator("PrimaryGeneratedColumn")],
-      ["OneToMany", new Decorator("OneToMany")],
-      ["ManyToOne", new Decorator("ManyToOne")],
-      ["ManyToMany", new Decorator("ManyToMany")],
-      ["OneToOne", new Decorator("OneToOne")]
-    ]);
+    const decorators = [
+      "Entity",
+      "Column",
+      "PrimaryGeneratedColumn",
+      "OneToMany",
+      "ManyToOne",
+      "ManyToMany",
+      "OneToOne"
+    ];
 
     const typeOrmImportExists = classNode.Imports.find((classNodeImport) =>
       classNodeImport.Name === typeOrmImport.Name
@@ -82,14 +106,14 @@ export class ClassCreatorRouter {
 
     if (!typeOrmImportExists) {
       typeOrmImport.AddImport(
-        ...Array.from(decorators.keys()).map<[string]>((importKey) => [importKey])
+        ...decorators.map<[string]>((importKey) => [importKey])
       );
 
       classNode.AddImport(typeOrmImport);
     }
 
     classNode.SetDecorators([]);
-    classNode.AddDecorator(decorators.get("Entity"));
+    classNode.AddDecorator(new Decorator("Entity"));
 
     let primaryDone = false;
 
@@ -125,18 +149,44 @@ export class ClassCreatorRouter {
         field.SetDecorators([]);
         if (field.Primary && !primaryDone) {
           field
-            .AddDecorator(decorators.get("PrimaryGeneratedColumn"))
+            .AddDecorator(new Decorator("PrimaryGeneratedColumn"))
             .SetType("number")
             .SetIsArray(false)
             .SetIsNullable(false)
             .SetPrimary(true);
           primaryDone = true;
         } else {
-          field
-            .SetPrimary(false)
-            .AddDecorator(decorators.get("Column"));
+          field.SetPrimary(false);
+          const relationTo = [
+            ...this._tsd.LoadedClasses,
+            classNode
+          ].find((relationTo) =>
+            relationTo.Name === field.TypeName
+          );
+          if (relationTo) {
+            console.log(relationTo);
+            let decorator: Decorator;
+            if (field.IsArray) {
+              decorator = new Decorator("OneToMany");
+            } else {
+              decorator = new Decorator("ManyToOne");
+            }
+            decorator.AddArgument(`type => ${relationTo.Name}`);
+            field.AddDecorator(decorator);
+          } else {
+            const columnDecorator = new Decorator("Column");
+            const codeWriter = new TsCodeWriter();
+            const typeName = this.pascalCase(field.TypeName);
+            codeWriter.Write(`{ type: ${typeName}, nullable: ${field.IsNullable} }`);
+            columnDecorator.AddArgument(codeWriter.Text);
+            field.AddDecorator(columnDecorator);
+          }
         }
       });
     }
+  }
+
+  private pascalCase(text: string) {
+    return text.charAt(0).toUpperCase() + text.slice(1);
   }
 }

@@ -6,7 +6,8 @@ import {
 import {
   writeFile,
   readFile,
-  readFileSync
+  readFileSync,
+  unlink
 } from "fs";
 import {
   ClassNode,
@@ -58,12 +59,18 @@ export class TSD {
   async Write(classNode: ClassNode, persist: boolean = true) {
     if (classNode.Path) {
       const classExistsIndex = this._loadedClasses.findIndex((foundClassNode) =>
-        (foundClassNode.Path === classNode.Path || foundClassNode.Name === classNode.Name) &&
-        foundClassNode !== classNode
+        (
+          (foundClassNode.Path === classNode.Path || foundClassNode.Name === classNode.Name) &&
+          foundClassNode !== classNode
+        ) || foundClassNode === classNode
       );
+
       if (classExistsIndex > -1) {
         this._loadedClasses[classExistsIndex] = classNode;
+      } else {
+        this._loadedClasses.push(classNode);
       }
+
       classNode.AddImport(...this.getFieldImports(classNode));
       await this.writeFile(classNode.Path, classNode.Content);
       if (persist) {
@@ -72,6 +79,15 @@ export class TSD {
     } else {
       throw new Error(`Set a path to class: ${classNode.Name}`);
     }
+  }
+
+  async Remove(name: string) {
+    const classNode = this._loadedClasses.find((loadedClass) => loadedClass.Name === name);
+    if (classNode) {
+      this._loadedClasses.splice(this._loadedClasses.indexOf(classNode), 1);
+      this.removeFile(classNode.Path);
+    }
+    return classNode;
   }
 
   async WriteSchemaFile() {
@@ -152,6 +168,21 @@ export class TSD {
             reject(err);
           } else {
             resolve(content);
+          }
+        }
+      );
+    });
+  }
+
+  private removeFile(path: string) {
+    return new Promise<string>((resolve, reject) => {
+      unlink(
+        path,
+        (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(path);
           }
         }
       );

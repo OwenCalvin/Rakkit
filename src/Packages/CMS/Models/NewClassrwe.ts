@@ -1,11 +1,15 @@
 import {
   Entity,
   Column,
-  PrimaryGeneratedColumn
+  PrimaryGeneratedColumn,
+  OneToMany,
+  ManyToOne,
+  ManyToMany,
+  OneToOne
 } from "typeorm";
 
 @Entity()
-export class Xo2 {
+export class NewClassrwe {
   @PrimaryGeneratedColumn()
   NewField: number;
 }

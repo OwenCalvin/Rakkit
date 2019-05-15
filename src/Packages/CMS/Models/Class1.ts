@@ -9,11 +9,9 @@ import {
 } from "typeorm";
 
 @Entity()
-export class NewClassasdfds {
+export class Class1 {
   @PrimaryGeneratedColumn()
-  NewFieldasd: number;
-  @Column()
-  NewFieldsdASD?: string[];
-  @Column()
-  NewFieldSASADa: string;
+  NewField: number;
+  @Column({ type: Class1, nullable: false })
+  NewField2: class1;
 }

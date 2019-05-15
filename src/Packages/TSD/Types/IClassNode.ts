@@ -10,4 +10,5 @@ export interface IClassNode extends INode {
   Imports: ArrayLike<IImport>;
   Fields: ArrayLike<IFieldNode>;
   Export: IExportRules;
+  ReceivedName?: string;
 }
