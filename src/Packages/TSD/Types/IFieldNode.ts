@@ -1,6 +1,7 @@
 import {
   Accessor,
-  INode
+  INode,
+  IRelation
 } from "..";
 
 export interface IFieldNode extends INode {
@@ -10,4 +11,5 @@ export interface IFieldNode extends INode {
   IsArray: boolean;
   IsNullable: boolean;
   Primary: boolean;
+  Relation: IRelation;
 }

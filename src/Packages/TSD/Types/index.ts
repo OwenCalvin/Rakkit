@@ -8,3 +8,4 @@ export * from "./IRules";
 export * from "./IFieldNode";
 export * from "./IImport";
 export * from "./INode";
+export * from "./IRelation";
