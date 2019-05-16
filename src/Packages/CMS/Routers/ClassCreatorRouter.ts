@@ -41,6 +41,25 @@ export class ClassCreatorRouter {
         .ParseObject(classNodeObject)
         .SetImports([])
         .SetPath(`${__dirname}/../Models/${classNode.Name}.ts`);
+
+      classNode.Fields.map((field) => {
+        if (field.StaticRelation) {
+          this._tsd.LoadedClasses.map((classNodeRelation) => {
+            if (field.TypeName === classNodeRelation.Name) {
+              let relationField = classNodeRelation.Fields.find((fieldRelation) => {
+                return fieldRelation.Name === field.StaticRelation.FieldNodeName;
+              });
+              if (!relationField) {
+                relationField = new FieldNode();
+                classNodeRelation.AddField(relationField);
+              }
+              relationField.ParseObject(field.StaticRelation.FieldNode);
+              field.SetRelation(relationField);
+            }
+          });
+        }
+      });
+
       this.templateClass(classNode);
       this._tsd.Write(classNode, false);
       this._tsd.WriteSchemaFile();
@@ -156,22 +175,14 @@ export class ClassCreatorRouter {
             .SetPrimary(true);
           primaryDone = true;
         } else {
-          field.SetPrimary(false);
-          const relationTo = [
-            ...this._tsd.LoadedClasses,
-            classNode
-          ].find((relationTo) =>
-            relationTo.Name === field.TypeName
-          );
-          if (relationTo) {
-            console.log(relationTo);
+          if (field.Relation) {
             let decorator: Decorator;
             if (field.IsArray) {
               decorator = new Decorator("OneToMany");
             } else {
               decorator = new Decorator("ManyToOne");
             }
-            decorator.AddArgument(`type => ${relationTo.Name}`);
+            decorator.AddArgument(`type => ${field.Relation.ClassNode.Name}`);
             field.AddDecorator(decorator);
           } else {
             const columnDecorator = new Decorator("Column");

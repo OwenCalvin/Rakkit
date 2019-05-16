@@ -62,7 +62,7 @@ export class ClassNode extends Node implements IClassNode {
       .SetExport(obj.Export)
       .SetName(obj.Name)
       .SetPath(obj.Path)
-      .AddField(...FieldNode.parseObjects(obj.Fields))
+      .AddField(...FieldNode.parseObjects(obj.Fields, this))
       .AddDecorator(...Decorator.parseObjects(obj.Decorators))
       .AddImport(...Import.parseObjects(obj.Imports));
 
@@ -95,6 +95,9 @@ export class ClassNode extends Node implements IClassNode {
   }
 
   AddField(...fields: FieldNode[]) {
+    fields.map((field) => {
+      field.SetClassNode(this);
+    });
     return this.addToArray(this._fields, ...fields);
   }
 

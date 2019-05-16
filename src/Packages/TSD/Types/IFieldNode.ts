@@ -11,5 +11,5 @@ export interface IFieldNode extends INode {
   IsArray: boolean;
   IsNullable: boolean;
   Primary: boolean;
-  Relation: IRelation;
+  StaticRelation?: IRelation;
 }

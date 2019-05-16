@@ -53,6 +53,7 @@ export class TSD {
         this._loadedClasses = ClassNode.parseObjects(classNodes);
       }
     } catch (err) {
+      console.log(err);
     }
   }
 

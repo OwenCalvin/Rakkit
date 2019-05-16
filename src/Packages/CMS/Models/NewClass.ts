@@ -10,10 +10,8 @@ import {
 
 @Entity()
 export class NewClass {
-  @Column({ type: Number, nullable: true })
-  NewFielddfghdfh?: number[];
   @PrimaryGeneratedColumn()
-  NewFielddffdg: number;
-  @Column({ type: Number, nullable: true })
-  NewFielddddddd?: number[];
+  ID: number;
+  @Column({ type: String, nullable: false })
+  NewField: string;
 }

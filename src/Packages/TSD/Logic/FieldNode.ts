@@ -3,8 +3,8 @@ import {
   Accessor,
   IFieldNode,
   Decorator,
-  IRelation,
-  ClassNode
+  ClassNode,
+  IRelation
 } from "..";
 
 export class FieldNode extends Node implements IFieldNode {
@@ -14,7 +14,9 @@ export class FieldNode extends Node implements IFieldNode {
   private _isNullable: boolean;
   private _defaultValue?: any;
   private _primary: boolean;
-  private _relation: IRelation;
+  private _relation: FieldNode;
+  private _classNode: ClassNode;
+  private _staticRelation: IRelation;
 
   get Accessors() {
     return this._accessors;
@@ -44,30 +46,43 @@ export class FieldNode extends Node implements IFieldNode {
     return this._relation;
   }
 
-  static parseObjects(objs: ArrayLike<IFieldNode>) {
-    return super.genericParseObjects(FieldNode, objs);
+  get ClassNode() {
+    return this._classNode;
+  }
+
+  get StaticRelation() {
+    return this._staticRelation;
+  }
+
+  static parseObjects(objs: ArrayLike<IFieldNode>, classNode: ClassNode) {
+    const fieldNodes = super.genericParseObjects(FieldNode, objs);
+    fieldNodes.map((fieldNode) => {
+      fieldNode.SetClassNode(classNode);
+    });
+    return fieldNodes;
   }
 
   ToObject(): IFieldNode {
-    return {
+    const obj: IFieldNode = {
       Name: this.Name,
       Primary: this.Primary,
       IsArray: this.IsArray,
-      Relation: this.Relation,
       TypeName: this.TypeName,
       Accessors: this.Accessors,
       IsNullable: this.IsNullable,
       DefaultValue: this.DefaultValue,
       Decorators: this.Decorators.map((decorator) => decorator.ToObject())
     };
+    if (this._relation) {
+      obj.StaticRelation = {
+        ClassNodeName: this._relation.ClassNode.Name,
+        FieldNodeName: this._relation.ToObject().Name
+      };
+    }
+    return obj;
   }
 
   ParseObject(obj: IFieldNode) {
-    const relationClass = new ClassNode();
-    const relationField = new FieldNode();
-    relationClass.ParseObject(obj.Relation.ClassNode);
-    relationField.ParseObject(obj.Relation.FieldNode);
-
     this
       .SetName(obj.Name)
       .SetDefaultValue(obj.DefaultValue)
@@ -76,15 +91,35 @@ export class FieldNode extends Node implements IFieldNode {
       .SetIsArray(obj.IsArray)
       .SetIsNullable(obj.IsNullable)
       .SetPrimary(obj.Primary)
-      .SetRelation(relationClass, relationField)
       .AddDecorator(...Decorator.parseObjects(obj.Decorators));
+
+    if (obj.StaticRelation) {
+      this.SetStaticRelation(
+        obj.StaticRelation.ClassNodeName,
+        obj.StaticRelation.FieldNode
+      );
+    }
 
     return this;
   }
 
-  SetRelation(classNode: ClassNode, fieldNode: FieldNode) {
-    this._relation.ClassNode = classNode;
-    this._relation.FieldNode = fieldNode;
+  SetClassNode(classNode: ClassNode) {
+    this._classNode = classNode;
+    return this;
+  }
+
+  SetStaticRelation(classNodeName: string, fieldNode: IFieldNode) {
+    if (classNodeName && fieldNode) {
+      this._staticRelation = {};
+      this._staticRelation.ClassNodeName = classNodeName;
+      this._staticRelation.FieldNodeName = fieldNode.Name;
+      this._staticRelation.FieldNode = fieldNode;
+    }
+    return this;
+  }
+
+  SetRelation(fieldNode: FieldNode) {
+    this._relation = fieldNode;
     return this;
   }
 

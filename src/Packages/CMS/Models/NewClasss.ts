@@ -7,11 +7,14 @@ import {
   ManyToMany,
   OneToOne
 } from "typeorm";
+import {
+  NewClass
+} from "./NewClass";
 
 @Entity()
-export class Class1 {
+export class NewClasss {
   @PrimaryGeneratedColumn()
   NewField: number;
-  @Column({ type: Class1, nullable: false })
-  NewField2: class1;
+  @OneToMany(type => NewClass)
+  NewField2: NewClass[];
 }
