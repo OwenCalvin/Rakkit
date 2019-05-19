@@ -95,10 +95,20 @@ export class ClassNode extends Node implements IClassNode {
   }
 
   AddField(...fields: FieldNode[]) {
-    fields.map((field) => {
+    const newFieldArr = [
+      ...this.Fields,
+      ...fields
+    ];
+    // Filter duplicated field
+    const fieldArrWithoutDup = newFieldArr.filter((field) => {
+      return !newFieldArr.find((fieldDup) => {
+        return field.Name === fieldDup.Name && field !== fieldDup;
+      });
+    });
+    fieldArrWithoutDup.map((field) => {
       field.SetClassNode(this);
     });
-    return this.addToArray(this._fields, ...fields);
+    return this.addToArray(this._fields, ...fieldArrWithoutDup);
   }
 
   RemoveField(field: FieldNode) {

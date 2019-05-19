@@ -76,7 +76,8 @@ export class FieldNode extends Node implements IFieldNode {
     if (this._relation) {
       obj.StaticRelation = {
         ClassNodeName: this._relation.ClassNode.Name,
-        FieldNodeName: this._relation.ToObject().Name
+        FieldNodeName: this._relation.ToObject().Name,
+        FieldNode: this._relation.ToObject()
       };
     }
     return obj;
@@ -96,8 +97,11 @@ export class FieldNode extends Node implements IFieldNode {
     if (obj.StaticRelation) {
       this.SetStaticRelation(
         obj.StaticRelation.ClassNodeName,
-        obj.StaticRelation.FieldNode
+        obj.StaticRelation.FieldNodeName
       );
+      if (obj.StaticRelation) {
+        this.StaticRelation.FieldNode = obj.StaticRelation.FieldNode;
+      }
     }
 
     return this;
@@ -108,17 +112,18 @@ export class FieldNode extends Node implements IFieldNode {
     return this;
   }
 
-  SetStaticRelation(classNodeName: string, fieldNode: IFieldNode) {
-    if (classNodeName && fieldNode) {
+  SetStaticRelation(classNodeName: string, fieldNodeName: string) {
+    if (classNodeName && fieldNodeName) {
       this._staticRelation = {};
       this._staticRelation.ClassNodeName = classNodeName;
-      this._staticRelation.FieldNodeName = fieldNode.Name;
-      this._staticRelation.FieldNode = fieldNode;
+      this._staticRelation.FieldNodeName = fieldNodeName;
     }
     return this;
   }
 
   SetRelation(fieldNode: FieldNode) {
+    this.SetStaticRelation(fieldNode.ClassNode.Name, fieldNode.Name);
+    this._staticRelation.FieldNode = fieldNode.ToObject();
     this._relation = fieldNode;
     return this;
   }

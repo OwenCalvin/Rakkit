@@ -5,7 +5,6 @@ import {
   Decorator,
   Import,
   FieldNode,
-  Accessor,
   TsCodeWriter
 } from "../../TSD";
 import {
@@ -42,23 +41,24 @@ export class ClassCreatorRouter {
         .SetImports([])
         .SetPath(`${__dirname}/../Models/${classNode.Name}.ts`);
 
-      classNode.Fields.map((field) => {
-        if (field.StaticRelation) {
-          this._tsd.LoadedClasses.map((classNodeRelation) => {
-            if (field.TypeName === classNodeRelation.Name) {
-              let relationField = classNodeRelation.Fields.find((fieldRelation) => {
-                return fieldRelation.Name === field.StaticRelation.FieldNodeName;
-              });
-              if (!relationField) {
-                relationField = new FieldNode();
-                classNodeRelation.AddField(relationField);
-              }
-              relationField.ParseObject(field.StaticRelation.FieldNode);
-              field.SetRelation(relationField);
-            }
-          });
-        }
-      });
+      // Parse relation
+      // classNode.Fields.map((field) => {
+      //   if (field.StaticRelation) {
+      //     this._tsd.LoadedClasses.map((classNodeRelation) => {
+      //       if (field.TypeName === classNodeRelation.Name) {
+      //         let relationField = classNodeRelation.Fields.find((fieldRelation) => {
+      //           return fieldRelation.Name === field.StaticRelation.FieldNodeName;
+      //         });
+      //         if (!relationField) {
+      //           relationField = new FieldNode();
+      //           classNodeRelation.AddField(relationField);
+      //         }
+      //         relationField.ParseObject(field.StaticRelation.FieldNode);
+      //         field.SetRelation(relationField);
+      //       }
+      //     });
+      //   }
+      // });
 
       this.templateClass(classNode);
       this._tsd.Write(classNode, false);
@@ -73,13 +73,19 @@ export class ClassCreatorRouter {
 
   @Delete("/:name")
   private async delete(context: IContext<IClassNode>) {
-    const name = context.request.query.name;
+    const name = context.params.name;
     if (name) {
       const removed = await this._tsd.Remove(name);
-      context.body = this.sendableClass(removed);
+      if (removed) {
+        context.body = this.sendableClass(removed);
+      } else {
+        context.status = 404;
+        context.body = "notfound";
+      }
+    } else {
+      context.status = 403;
+      context.body = this.msg("fill");
     }
-    context.status = 403;
-    context.body = this.msg("fill");
   }
 
   @Post("/restart")
@@ -107,6 +113,10 @@ export class ClassCreatorRouter {
     return Object.assign({}, classNode.ToObject(), { Path: undefined });
   }
 
+  /**
+   * Normalize a classNode
+   * @param classNode The classNode
+   */
   private templateClass(classNode: ClassNode) {
     const typeOrmImport = new Import("typeorm");
     const decorators = [
@@ -136,6 +146,7 @@ export class ClassCreatorRouter {
 
     let primaryDone = false;
 
+    // Remove duplicated field
     classNode.Fields.reduce<FieldNode[]>((prev, field) => {
       if (field.Name) {
         const remove = classNode.Fields.find((field2) => {
@@ -157,44 +168,48 @@ export class ClassCreatorRouter {
       classNode.Fields.splice(classNode.Fields.indexOf(toRemove), 1);
     });
 
-    if (classNode.Fields.length > 0) {
-      const primaryExists = classNode.Fields.find((field) => field.Primary);
-
-      if (!primaryExists) {
-        classNode.Fields[0].SetPrimary(true);
-      }
-
-      classNode.Fields.map((field) => {
-        field.SetDecorators([]);
-        if (field.Primary && !primaryDone) {
-          field
-            .AddDecorator(new Decorator("PrimaryGeneratedColumn"))
-            .SetType("number")
-            .SetIsArray(false)
-            .SetIsNullable(false)
-            .SetPrimary(true);
-          primaryDone = true;
-        } else {
-          if (field.Relation) {
-            let decorator: Decorator;
-            if (field.IsArray) {
-              decorator = new Decorator("OneToMany");
-            } else {
-              decorator = new Decorator("ManyToOne");
-            }
-            decorator.AddArgument(`type => ${field.Relation.ClassNode.Name}`);
-            field.AddDecorator(decorator);
-          } else {
-            const columnDecorator = new Decorator("Column");
-            const codeWriter = new TsCodeWriter();
-            const typeName = this.pascalCase(field.TypeName);
-            codeWriter.Write(`{ type: ${typeName}, nullable: ${field.IsNullable} }`);
-            columnDecorator.AddArgument(codeWriter.Text);
-            field.AddDecorator(columnDecorator);
-          }
-        }
-      });
+    // Add primary key at class creation
+    if (classNode.Fields.length < 1) {
+      const primaryField = new FieldNode("ID");
+      this.setFieldPrimary(primaryField);
+      classNode.AddField(primaryField);
     }
+
+    classNode.Fields.map((field) => {
+      field.SetDecorators([]);
+      if (field.Primary && !primaryDone) {
+        this.setFieldPrimary(field);
+        primaryDone = true;
+      } else {
+        if (field.Relation) {
+          let decorator: Decorator;
+          if (field.IsArray) {
+            decorator = new Decorator("OneToMany");
+          } else {
+            decorator = new Decorator("ManyToOne");
+          }
+          decorator.AddArgument(`type => ${field.Relation.ClassNode.Name}`);
+          field.AddDecorator(decorator);
+        } else {
+          const columnDecorator = new Decorator("Column");
+          const codeWriter = new TsCodeWriter();
+          const typeName = this.pascalCase(field.TypeName);
+          codeWriter.Write(`{ type: ${typeName}, nullable: ${field.IsNullable} }`);
+          columnDecorator.AddArgument(codeWriter.Text);
+          field.AddDecorator(columnDecorator);
+        }
+      }
+    });
+  }
+
+  private setFieldPrimary(field: FieldNode) {
+    field
+      .AddDecorator(new Decorator("PrimaryGeneratedColumn"))
+      .SetType("number")
+      .SetIsArray(false)
+      .SetIsNullable(false)
+      .SetPrimary(true);
+    return field;
   }
 
   private pascalCase(text: string) {

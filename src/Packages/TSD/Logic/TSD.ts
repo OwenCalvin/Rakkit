@@ -51,6 +51,23 @@ export class TSD {
       if (fileContent) {
         const classNodes: IClassNode[] = JSON.parse(fileContent);
         this._loadedClasses = ClassNode.parseObjects(classNodes);
+
+        // Load relation
+        // this._loadedClasses.map((loadedClass) => {
+        //   loadedClass.Fields.map((field) => {
+        //     if (field.StaticRelation) {
+        //       this._loadedClasses.map((classRelation) => {
+        //         if (classRelation.Name === field.StaticRelation.ClassNodeName) {
+        //           classRelation.Fields.map((fieldRelation) => {
+        //             if (fieldRelation.Name === field.StaticRelation.FieldNodeName) {
+        //               field.SetRelation(fieldRelation);
+        //             }
+        //           });
+        //         }
+        //       });
+        //     }
+        //   });
+        // });
       }
     } catch (err) {
       console.log(err);
@@ -87,6 +104,7 @@ export class TSD {
     if (classNode) {
       this._loadedClasses.splice(this._loadedClasses.indexOf(classNode), 1);
       this.removeFile(classNode.Path);
+      this.WriteSchemaFile();
     }
     return classNode;
   }
