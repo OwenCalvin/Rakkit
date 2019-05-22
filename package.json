@@ -27,7 +27,7 @@
   },
   "scripts": {
     "start": "ts-node -T examples/basic/src/App.ts",
-    "start:cms": "ts-node -T src/Packages/CMS/Main.ts",
+    "start:cms": "pm2 start && pm2 monit",
     "test": "jest --config jest.config.json --detectOpenHandles --runInBand --forceExit"
   },
   "keywords": [
