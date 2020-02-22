@@ -987,7 +987,7 @@ export class GqlMetadataBuilder extends MetadataBuilder {
 
           if (arg.flat) {
             this._fieldDefs.map((field) => {
-              if (field.class === gqlTypeDef.class) {
+              if (gqlTypeDef && field.class === gqlTypeDef.class) {
                 prev[field.params.name] = {
                   type: this.parseTypeToGql(field.params, gqlTypeDef) as GraphQLInputType,
                   defaultValue: field.params.defaultValue,
