@@ -87,14 +87,15 @@ export class DecoratorHelper {
     target: Function,
     gqlType: Type,
     name?: string,
-    params: Partial<IGqlType> = {}
+    params: Partial<IGqlType> = {},
+    originalClass?: Function,
   ): IDecorator<IGqlType<Type>> {
     const definedName = name || target.name;
     if (params.implements && !Array.isArray(params.implements)) {
       params.implements = [params.implements];
     }
     return {
-      originalClass: target,
+      originalClass: originalClass || target,
       class: target,
       key: target.name || definedName,
       category: "gql",

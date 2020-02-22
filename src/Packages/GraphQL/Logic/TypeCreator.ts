@@ -39,6 +39,7 @@ export class TypeCreator {
     const gqlTypeDef = this.createGqlTypeDef(
       definedName,
       GraphQLEnumType,
+      undefined,
       {
         ...params,
         enumRef: enumType
@@ -84,6 +85,7 @@ export class TypeCreator {
     const gqlTypeDef = this.createGqlTypeDef(
       definedParams.name || `union${basicName}`,
       GraphQLUnionType,
+      undefined,
       params
     );
     gqlTypeDef.params.unionTypes = types;
@@ -112,7 +114,7 @@ export class TypeCreator {
       { nullable: false },
       definedParams.gqlType,
       definedParams.name,
-      { description: params.description }
+      { description: definedParams.description }
     );
   }
 
@@ -134,7 +136,7 @@ export class TypeCreator {
       { nullable: true },
       definedParams.gqlType,
       definedParams.name,
-      { description: params.description }
+      { description: definedParams.description }
     );
   }
 
@@ -151,7 +153,8 @@ export class TypeCreator {
   ): Function {
     const gqlTypeDef = this.createGqlTypeDef(
       name || target.name,
-      gqlType
+      gqlType,
+      target
     );
     gqlTypeDef.params.transformation = {
       prefix: name ? undefined : prefix,
@@ -173,13 +176,15 @@ export class TypeCreator {
   private static createGqlTypeDef<Type extends GqlType>(
     name: string,
     gqlType: Type,
+    originalClass: Function,
     extraParams: Partial<IGqlType> = {}
   ) {
     return DecoratorHelper.getAddTypeParams<Type>(
       () => name,
       gqlType,
       name,
-      extraParams
+      extraParams,
+      originalClass
     );
   }
 }

@@ -471,6 +471,7 @@ export class GqlMetadataBuilder extends MetadataBuilder {
       if (fieldDef.class === gqlTypeDef.class) {
         const newFieldDef = this.copyDecoratorType(fieldDef, {
           class: destination.class,
+          originalClass: gqlTypeDef.class,
           params: transformation.params
         });
         prev.push(newFieldDef);
@@ -1174,7 +1175,7 @@ export class GqlMetadataBuilder extends MetadataBuilder {
             if (fieldGqlTypeDef.params.gqlType === GraphQLEnumType) {
               return fieldGqlTypeDef.params.enumValues[fieldValue].value;
             } else {
-              const instance = new (fieldType as IClassType)();
+              const instance = new (fieldGqlTypeDef.originalClass as IClassType)();
               Object.entries(values).map(([key, value]) => {
                 const childField = this._fieldDefs.find((fieldDef) =>
                   fieldDef.class === fieldType &&

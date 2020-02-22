@@ -9,7 +9,7 @@
       "request": "launch",
       "name": "Debug app",
       "protocol": "inspector",
-      "args": ["${workspaceRoot}/examples/basic/src/App.ts"],
+      "args": ["${workspaceRoot}/examples/graphql/lg/src/Main.ts"],
       "cwd": "${workspaceRoot}",
       "runtimeArgs": ["-r", "ts-node/register/transpile-only"],
       "console": "integratedTerminal",
