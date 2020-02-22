@@ -31,7 +31,6 @@ export class DecoratorHelper {
     let arrayDepth = 0;
     let finalTypeFn: TypeFn = undefined;
 
-
     const countArrayDepth = (prev: Array<Function> | Function) => {
       if (Array.isArray(prev)) {
         arrayDepth++;
@@ -54,7 +53,7 @@ export class DecoratorHelper {
 
     return {
       arrayDepth,
-      type: finalTypeFn || reflectTypeFn
+      type: finalTypeFn || typeFn || reflectTypeFn
     };
   }
 
